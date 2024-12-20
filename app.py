@@ -146,50 +146,24 @@ def start_test(section_type):
     }
     
     return render_template('test.html', section_type=section_type, questions=questions)
-
+	
 @app.route('/submit_test', methods=['POST'])
 def submit_test():
-    try:
-        data = request.get_json()
-        if not data or 'answers' not in data:
-            return jsonify({'error': 'No answers provided'}), 400
-
-        answers = data.get('answers', [])
-        current_test = session.get('current_test')
-        
-        if not current_test:
-            return jsonify({'error': 'No test in progress'}), 400
-            
-        questions = current_test.get('questions', [])
-        
-        if not questions:
-            return jsonify({'error': 'No questions found'}), 400
-            
-        # Convert the Question objects to be JSON serializable
-        questions_json = []
-        for q in questions:
-            questions_json.append({
-                'question_text': q.question_text,
-                'options': q.options,
-                'correct_answer': q.correct_answer,
-                'explanation': q.explanation
-            })
-            
-        score = sum(1 for q, a in zip(questions_json, answers) if q['correct_answer'] == a)
-        
-        result = {
-            'score': score,
-            'total': len(questions_json),
-            'percentage': (score / len(questions_json)) * 100 if questions_json else 0,
-            'time_taken': (datetime.datetime.now() - 
-                          datetime.datetime.fromisoformat(current_test['start_time'])).seconds
-        }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        app.logger.error(f'Error in submit_test: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+    answers = request.json.get('answers', [])
+    current_test = session.get('current_test', {})
+    questions = current_test.get('questions', [])
+    
+    score = sum(1 for q, a in zip(questions, answers) if q['correct_answer'] == a)
+    
+    result = {
+        'score': score,
+        'total': len(questions),
+        'percentage': (score / len(questions)) * 100,
+        'time_taken': (datetime.datetime.now() - 
+                      datetime.datetime.fromisoformat(current_test['start_time'])).seconds
+    }
+    
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True)
