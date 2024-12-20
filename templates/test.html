@@ -11,19 +11,38 @@
 
         <form id="testForm" class="space-y-8">
             {% for question in questions %}
-			<div class="question-container">
-				<p class="font-semibold mb-3">{{ loop.index }}. {{ question.question_text }}</p>
-				<div class="space-y-2">
-					{% set outer_loop = loop %}
-					{% for option in question.options %}
-					<label class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
-						<input type="radio" name="q{{ outer_loop.index }}" value="{{ option }}" class="mt-1">
-						<span>{{ option }}</span>
-					</label>
-					{% endfor %}
-				</div>
-			</div>
-			{% endfor %}	
+            <div class="question-container">
+                <p class="font-semibold mb-3">{{ loop.index }}. {{ question.question_text }}</p>
+                
+                {% if question.matrix_data %}
+                <div class="matrix-container mb-4">
+                    <div class="inline-grid gap-1" style="grid-template-columns: repeat({{ question.matrix_data.cols }}, 40px);">
+                        {% for row in question.matrix_data.matrix %}
+                            {% for cell in row %}
+                                <div class="w-10 h-10 border border-gray-300 flex items-center justify-center">
+                                    {% if cell is none %}
+                                        <span class="text-gray-500">?</span>
+                                    {% else %}
+                                        {{ cell }}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="space-y-2">
+                    {% set outer_loop = loop %}
+                    {% for option in question.options %}
+                    <label class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
+                        <input type="radio" name="q{{ outer_loop.index }}" value="{{ option }}" class="mt-1">
+                        <span>{{ option }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}    
 
             <div class="mt-6 text-center">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
@@ -52,52 +71,49 @@
 
 {% block scripts %}
 <script>
-	document.addEventListener('DOMContentLoaded', function() {
-		// Timer - 5 minutes
-		let timeLeft = 5 * 60;
-		const timerDisplay = document.getElementById('timer');
-		
-		const timer = setInterval(function() {
-			timeLeft--;
-			const minutes = Math.floor(timeLeft / 60);
-			const seconds = timeLeft % 60;
-			timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-			
-			if (timeLeft <= 0) {
-				clearInterval(timer);
-				submitTest();
-			}
-		}, 1000);
-	
-		// Form submission
-		const testForm = document.getElementById('testForm');
-		testForm.addEventListener('submit', function(e) {
-			e.preventDefault();
-			const answers = [];
-			
-			// Collect answers
-			document.querySelectorAll('.question-container').forEach((_, index) => {
-				const selected = document.querySelector(`input[name="q${index + 1}"]:checked`);
-				answers.push(selected ? selected.value : null);
-			});
-	
-			// Send to server
-			fetch('/submit_test', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ answers: answers })
-			})
-			.then(response => response.json())
-			.then(result => {
-				// Show results modal
-				document.getElementById('resultsContent').innerHTML = `
-					<p>Score: ${result.score}/${result.total}</p>
-					<p>Percentage: ${result.percentage.toFixed(1)}%</p>
-					<p>Time: ${Math.floor(result.time_taken / 60)}m ${result.time_taken % 60}s</p>
-				`;
-				document.getElementById('resultsModal').classList.remove('hidden');
-			});
-		});
-	});
+    document.addEventListener('DOMContentLoaded', function() {
+        // Timer functionality remains the same
+        let timeLeft = 5 * 60;
+        const timerDisplay = document.getElementById('timer');
+        
+        const timer = setInterval(function() {
+            timeLeft--;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                submitTest();
+            }
+        }, 1000);
+    
+        // Form submission functionality remains the same
+        const testForm = document.getElementById('testForm');
+        testForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const answers = [];
+            
+            document.querySelectorAll('.question-container').forEach((_, index) => {
+                const selected = document.querySelector(`input[name="q${index + 1}"]:checked`);
+                answers.push(selected ? selected.value : null);
+            });
+    
+            fetch('/submit_test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers: answers })
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById('resultsContent').innerHTML = `
+                    <p>Score: ${result.score}/${result.total}</p>
+                    <p>Percentage: ${result.percentage.toFixed(1)}%</p>
+                    <p>Time: ${Math.floor(result.time_taken / 60)}m ${result.time_taken % 60}s</p>
+                `;
+                document.getElementById('resultsModal').classList.remove('hidden');
+            });
+        });
+    });
 </script>
 {% endblock %}
