@@ -15,14 +15,18 @@ class Question:
     options: List[str]
     correct_answer: str
     explanation: str
+    matrix_data: Dict = None  # New field for matrix data
 
     def to_dict(self):
-        return {
+        data = {
             'question_text': self.question_text,
             'options': self.options,
             'correct_answer': self.correct_answer,
             'explanation': self.explanation
         }
+        if self.matrix_data:
+            data['matrix_data'] = self.matrix_data
+        return data
 
 class VerbalQuestionGenerator:
     def __init__(self):
@@ -216,28 +220,33 @@ class DiagrammaticQuestionGenerator:
         
         self.available_matrices = [
             {
-                'question': '''
-┌───┬───┐
-│ ○ │ □ │
-├───┼───┤
-│ □ │ ? │
-└───┴───┘''',
+                'matrix': [
+                    ['○', '□'],
+                    ['□', None]  # None represents the question mark
+                ],
                 'options': ['○', '□', '△', '■'],
                 'correct': '○',
                 'explanation': 'The shapes alternate in a diagonal pattern'
             },
             {
-                'question': '''
-┌───┬───┬───┐
-│ ■ │ □ │ ■ │
-├───┼───┼───┤
-│ □ │ ■ │ □ │
-├───┼───┼───┤
-│ ■ │ □ │ ? │
-└───┴───┴───┘''',
+                'matrix': [
+                    ['■', '□', '■'],
+                    ['□', '■', '□'],
+                    ['■', '□', None]
+                ],
                 'options': ['■', '□', '△', '○'],
                 'correct': '■',
                 'explanation': 'The pattern alternates between filled and unfilled squares in each row'
+            },
+            {
+                'matrix': [
+                    ['△', '○', '△'],
+                    ['○', '△', '○'],
+                    ['△', '○', None]
+                ],
+                'options': ['△', '○', '□', '■'],
+                'correct': '△',
+                'explanation': 'The pattern alternates between triangle and circle in each row'
             }
         ]
         
@@ -265,16 +274,25 @@ class DiagrammaticQuestionGenerator:
         if use_pattern:
             chosen = self.patterns.pop(random.randrange(len(self.patterns)))
             question_text = f"What comes next in the pattern: {chosen['sequence']}?"
+            return Question(
+                question_text=question_text,
+                options=chosen['options'],
+                correct_answer=chosen['correct'],
+                explanation=chosen['explanation']
+            )
         else:
             chosen = self.matrices.pop(random.randrange(len(self.matrices)))
-            question_text = f"What should replace the question mark?\n{chosen['question']}"
-            
-        return Question(
-            question_text=question_text,
-            options=chosen['options'],
-            correct_answer=chosen['correct'],
-            explanation=chosen['explanation']
-        )
+            return Question(
+                question_text="What should replace the question mark?",
+                options=chosen['options'],
+                correct_answer=chosen['correct'],
+                explanation=chosen['explanation'],
+                matrix_data={
+                    'matrix': chosen['matrix'],
+                    'rows': len(chosen['matrix']),
+                    'cols': len(chosen['matrix'][0])
+                }
+            )
 
 class TestManager:
     def __init__(self):
