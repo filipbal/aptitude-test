@@ -1,0 +1,34 @@
+{
+    "site_title": "Test analytických dovedností",
+    "nav_title": "Test analytických dovedností Swift",
+    "welcome_title": "Vítejte v testu analytických dovedností",
+    "test_format": "Formát testu:",
+    "test_format_items": [
+        "Tři sekce: Verbální, Numerická a Diagramatická",
+        "Každá sekce je časově omezená (15 minut na sekci)",
+        "Otázky s výběrem odpovědí",
+        "Okamžitá zpětná vazba po dokončení"
+    ],
+    "verbal_section": {
+        "title": "Verbální analýza",
+        "description": "Test verbálního uvažování a jazykových dovedností"
+    },
+    "numerical_section": {
+        "title": "Numerická analýza",
+        "description": "Test matematických a analytických schopností"
+    },
+    "diagrammatic_section": {
+        "title": "Diagramatická analýza",
+        "description": "Test rozpoznávání vzorů a logického myšlení"
+    },
+    "start_section": "Začít sekci",
+    "submit_answers": "Odeslat odpovědi",
+    "results": {
+        "title": "Výsledky testu",
+        "score": "Skóre",
+        "percentage": "Procenta",
+        "time": "Čas",
+        "return_home": "Zpět na úvod"
+    },
+    "language_switch": "Switch to English"
+}

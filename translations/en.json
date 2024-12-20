@@ -1,0 +1,34 @@
+{
+    "site_title": "Aptitude Test",
+    "nav_title": "Swift Analysis Style Aptitude Test",
+    "welcome_title": "Welcome to the Aptitude Test",
+    "test_format": "Test Format:",
+    "test_format_items": [
+        "Three sections: Verbal, Numerical, and Diagrammatic",
+        "Each section is timed (15 minutes per section)",
+        "Multiple choice questions",
+        "Immediate feedback after completion"
+    ],
+    "verbal_section": {
+        "title": "Verbal Analysis",
+        "description": "Test your verbal reasoning and language skills"
+    },
+    "numerical_section": {
+        "title": "Numerical Analysis",
+        "description": "Test your mathematical and analytical abilities"
+    },
+    "diagrammatic_section": {
+        "title": "Diagrammatic Analysis",
+        "description": "Test your pattern recognition and logical thinking"
+    },
+    "start_section": "Start Section",
+    "submit_answers": "Submit Answers",
+    "results": {
+        "title": "Test Results",
+        "score": "Score",
+        "percentage": "Percentage",
+        "time": "Time",
+        "return_home": "Return to Home"
+    },
+    "language_switch": "Přepnout do češtiny"
+}

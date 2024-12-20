@@ -1,38 +1,42 @@
-<!-- templates/index.html -->
 {% extends "base.html" %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
-    <h2 class="text-2xl font-bold mb-6 text-center">Welcome to the Aptitude Test</h2>
+    <h2 class="text-2xl font-bold mb-6 text-center">{{ t.welcome_title }}</h2>
     
     <div class="space-y-6">
         <div class="bg-gray-50 p-4 rounded">
-            <h3 class="font-semibold mb-2">Test Format:</h3>
+            <h3 class="font-semibold mb-2">{{ t.test_format }}</h3>
             <ul class="list-disc list-inside space-y-2">
-                <li>Three sections: Verbal, Numerical, and Diagrammatic</li>
-                <li>Each section is timed (15 minutes per section)</li>
-                <li>Multiple choice questions</li>
-                <li>Immediate feedback after completion</li>
+                {% for item in t.test_format_items %}
+                    <li>{{ item }}</li>
+                {% endfor %}
             </ul>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-white border rounded p-4 text-center">
-                <h3 class="font-semibold mb-2">Verbal Analysis</h3>
-                <p class="text-sm mb-4">Test your verbal reasoning and language skills</p>
-                <a href="/start_test/verbal" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Start Section</a>
+                <h3 class="font-semibold mb-2">{{ t.verbal_section.title }}</h3>
+                <p class="text-sm mb-4">{{ t.verbal_section.description }}</p>
+                <a href="/start_test/verbal" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    {{ t.start_section }}
+                </a>
             </div>
 
             <div class="bg-white border rounded p-4 text-center">
-                <h3 class="font-semibold mb-2">Numerical Analysis</h3>
-                <p class="text-sm mb-4">Test your mathematical and analytical abilities</p>
-                <a href="/start_test/numerical" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Start Section</a>
+                <h3 class="font-semibold mb-2">{{ t.numerical_section.title }}</h3>
+                <p class="text-sm mb-4">{{ t.numerical_section.description }}</p>
+                <a href="/start_test/numerical" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    {{ t.start_section }}
+                </a>
             </div>
 
             <div class="bg-white border rounded p-4 text-center">
-                <h3 class="font-semibold mb-2">Diagrammatic Analysis</h3>
-                <p class="text-sm mb-4">Test your pattern recognition and logical thinking</p>
-                <a href="/start_test/diagrammatic" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Start Section</a>
+                <h3 class="font-semibold mb-2">{{ t.diagrammatic_section.title }}</h3>
+                <p class="text-sm mb-4">{{ t.diagrammatic_section.description }}</p>
+                <a href="/start_test/diagrammatic" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    {{ t.start_section }}
+                </a>
             </div>
         </div>
     </div>

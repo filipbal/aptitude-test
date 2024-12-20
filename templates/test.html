@@ -1,12 +1,19 @@
-<!-- templates/test.html -->
 {% extends "base.html" %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto">
     <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold">{{ section_type|title }} Analysis</h2>
-            <div class="text-xl font-mono" id="timer">05:00</div>
+            <h2 class="text-xl font-bold">
+                {% if section_type == 'verbal' %}
+                    {{ t.verbal_section.title }}
+                {% elif section_type == 'numerical' %}
+                    {{ t.numerical_section.title }}
+                {% else %}
+                    {{ t.diagrammatic_section.title }}
+                {% endif %}
+            </h2>
+            <div class="text-xl font-mono" id="timer">15:00</div>
         </div>
 
         <form id="testForm" class="space-y-8">
@@ -46,7 +53,7 @@
 
             <div class="mt-6 text-center">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-                    Submit Answers
+                    {{ t.submit_answers }}
                 </button>
             </div>
         </form>
@@ -56,13 +63,13 @@
 <!-- Results Modal -->
 <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-        <h3 class="text-xl font-bold mb-4">Test Results</h3>
+        <h3 class="text-xl font-bold mb-4">{{ t.results.title }}</h3>
         <div id="resultsContent" class="space-y-4">
             <!-- Results will be inserted here -->
         </div>
         <div class="mt-6 flex justify-end">
             <a href="/" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                Return to Home
+                {{ t.results.return_home }}
             </a>
         </div>
     </div>
@@ -72,8 +79,7 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Timer functionality remains the same
-        let timeLeft = 5 * 60;
+        let timeLeft = 15 * 60;  // 15 minutes
         const timerDisplay = document.getElementById('timer');
         
         const timer = setInterval(function() {
@@ -88,10 +94,13 @@
             }
         }, 1000);
     
-        // Form submission functionality remains the same
         const testForm = document.getElementById('testForm');
         testForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            submitTest();
+        });
+
+        function submitTest() {
             const answers = [];
             
             document.querySelectorAll('.question-container').forEach((_, index) => {
@@ -106,14 +115,20 @@
             })
             .then(response => response.json())
             .then(result => {
+                const translations = {
+                    score: '{{ t.results.score }}',
+                    percentage: '{{ t.results.percentage }}',
+                    time: '{{ t.results.time }}'
+                };
+
                 document.getElementById('resultsContent').innerHTML = `
-                    <p>Score: ${result.score}/${result.total}</p>
-                    <p>Percentage: ${result.percentage.toFixed(1)}%</p>
-                    <p>Time: ${Math.floor(result.time_taken / 60)}m ${result.time_taken % 60}s</p>
+                    <p>${translations.score}: ${result.score}/${result.total}</p>
+                    <p>${translations.percentage}: ${result.percentage.toFixed(1)}%</p>
+                    <p>${translations.time}: ${Math.floor(result.time_taken / 60)}m ${result.time_taken % 60}s</p>
                 `;
                 document.getElementById('resultsModal').classList.remove('hidden');
             });
-        });
+        }
     });
 </script>
 {% endblock %}

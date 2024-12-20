@@ -1,13 +1,28 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
 import string
 import datetime
+import json
 from dataclasses import dataclass
 from typing import List, Dict, Any, Callable
 import math
+import os
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Replace with secure key in production
+
+# Load translations
+def load_translations():
+    translations = {}
+    translations_dir = os.path.join(os.path.dirname(__file__), 'translations')
+    for filename in os.listdir(translations_dir):
+        if filename.endswith('.json'):
+            lang_code = filename[:-5]  # Remove .json extension
+            with open(os.path.join(translations_dir, filename), 'r', encoding='utf-8') as f:
+                translations[lang_code] = json.load(f)
+    return translations
+
+TRANSLATIONS = load_translations()
 
 @dataclass
 class Question:
@@ -313,16 +328,28 @@ class TestManager:
             
         return [generator() for _ in range(num_questions)]
 
+@app.before_request
+def before_request():
+    if 'lang' not in session:
+        session['lang'] = 'en'
+
+@app.route('/switch_language/<lang>')
+def switch_language(lang):
+    if lang in TRANSLATIONS:
+        session['lang'] = lang
+    return redirect(request.referrer or url_for('index'))
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    translations = TRANSLATIONS[session.get('lang', 'en')]
+    return render_template('index.html', t=translations)
 
 @app.route('/start_test/<section_type>')
 def start_test(section_type):
+    translations = TRANSLATIONS[session.get('lang', 'en')]
     test_manager = TestManager()
     questions = test_manager.generate_test_section(section_type)
     
-    # Convert questions to dictionaries for session storage
     questions_data = [q.to_dict() for q in questions]
     
     session['current_test'] = {
@@ -332,7 +359,7 @@ def start_test(section_type):
         'answers': []
     }
     
-    return render_template('test.html', section_type=section_type, questions=questions)
+    return render_template('test.html', section_type=section_type, questions=questions, t=translations)
 
 @app.route('/submit_test', methods=['POST'])
 def submit_test():
