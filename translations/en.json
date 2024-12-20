@@ -5,7 +5,7 @@
     "test_format": "Test Format:",
     "test_format_items": [
         "Three sections: Verbal, Numerical, and Diagrammatic",
-        "Each section is timed (15 minutes per section)",
+        "Each section is timed (5 minutes per section)",
         "Multiple choice questions",
         "Immediate feedback after completion"
     ],

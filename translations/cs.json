@@ -5,7 +5,7 @@
     "test_format": "Formát testu:",
     "test_format_items": [
         "Tři sekce: Verbální, Numerická a Diagramatická",
-        "Každá sekce je časově omezená (15 minut na sekci)",
+        "Každá sekce je časově omezená (5 minut na sekci)",
         "Otázky s výběrem odpovědí",
         "Okamžitá zpětná vazba po dokončení"
     ],
