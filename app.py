@@ -1,12 +1,18 @@
+import sys
+sys.dont_write_bytecode = True
+
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
-import string
 import datetime
 import json
-from dataclasses import dataclass
-from typing import List, Dict, Any, Callable
-import math
 import os
+from dataclasses import dataclass
+from typing import List, Dict, Any
+
+# Import our new question modules
+from questions.verbal import VerbalQuestions
+from questions.numerical import NumericalQuestions
+from questions.diagrammatical import DiagrammaticQuestions
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Replace with secure key in production
@@ -30,9 +36,10 @@ class Question:
     options: List[str]
     correct_answer: str
     explanation: str
-    matrix_data: Dict = None  # New field for matrix data
+    matrix_data: Dict = None
 
     def to_dict(self):
+        """Convert question to dictionary format for session storage"""
         data = {
             'question_text': self.question_text,
             'options': self.options,
@@ -43,283 +50,98 @@ class Question:
             data['matrix_data'] = self.matrix_data
         return data
 
-class VerbalQuestionGenerator:
-    def __init__(self):
-        # Move relationships and analogies to instance variables
-        self.available_relationships = [
-            # Synonyms
-            {
-                'pair': ('FAST', 'SWIFT'),
-                'options': ['SLOW:QUICK', 'TALL:HIGH', 'DARK:LIGHT', 'HOT:WARM'],
-                'correct': 'SLOW:QUICK',
-                'explanation': 'FAST and SWIFT are synonyms, as are SLOW and QUICK'
-            },
-            {
-                'pair': ('BRAVE', 'COURAGEOUS'),
-                'options': ['TIMID:FEARFUL', 'HAPPY:SAD', 'STRONG:WEAK', 'WISE:SMART'],
-                'correct': 'TIMID:FEARFUL',
-                'explanation': 'BRAVE and COURAGEOUS are synonyms, as are TIMID and FEARFUL'
-            },
-            # Antonyms
-            {
-                'pair': ('LIGHT', 'DARK'),
-                'options': ['HOT:COLD', 'FAST:SLOW', 'BIG:SMALL', 'HAPPY:GLAD'],
-                'correct': 'HOT:COLD',
-                'explanation': 'LIGHT and DARK are opposites, as are HOT and COLD'
-            },
-            # Part-to-whole relationships
-            {
-                'pair': ('PETAL', 'FLOWER'),
-                'options': ['WHEEL:CAR', 'BOOK:PAGE', 'TREE:FOREST', 'WATER:OCEAN'],
-                'correct': 'WHEEL:CAR',
-                'explanation': 'A PETAL is part of a FLOWER, as a WHEEL is part of a CAR'
-            },
-            # Cause and effect
-            {
-                'pair': ('RAIN', 'FLOOD'),
-                'options': ['FIRE:SMOKE', 'DAY:NIGHT', 'SUMMER:WINTER', 'DOOR:WINDOW'],
-                'correct': 'FIRE:SMOKE',
-                'explanation': 'RAIN can cause a FLOOD, as FIRE causes SMOKE'
-            },
-            # Tool and user
-            {
-                'pair': ('HAMMER', 'CARPENTER'),
-                'options': ['SCALPEL:SURGEON', 'PEN:BOOK', 'CAR:ROAD', 'HOUSE:BUILDER'],
-                'correct': 'SCALPEL:SURGEON',
-                'explanation': 'A HAMMER is used by a CARPENTER, as a SCALPEL is used by a SURGEON'
-            }
-        ]
-        
-        self.available_analogies = [
-            {
-                'question': 'BIRD is to SKY as FISH is to?',
-                'options': ['WATER', 'BOAT', 'SCALE', 'NET'],
-                'correct': 'WATER',
-                'explanation': 'Birds move through the sky as fish move through water - both are natural habitats'
-            },
-            {
-                'question': 'CANVAS is to PAINTER as STAGE is to?',
-                'options': ['ACTOR', 'CURTAIN', 'AUDIENCE', 'THEATRE'],
-                'correct': 'ACTOR',
-                'explanation': 'A canvas is the workspace of a painter, as a stage is the workspace of an actor'
-            },
-            {
-                'question': 'KEYBOARD is to TYPE as BRUSH is to?',
-                'options': ['PAINT', 'HAIR', 'CLEAN', 'BRISTLE'],
-                'correct': 'PAINT',
-                'explanation': 'A keyboard is used to type, as a brush is used to paint - both are tools for their respective actions'
-            }
-        ]
-        
-        self.reset_pools()
+class TestManager:
+    """
+    Manages test generation and handles different question types and languages.
+    """
+    def __init__(self, lang='en'):
+        self.lang = lang
+        # Initialize question banks based on language
+        self.questions = {
+            'verbal': VerbalQuestions.QUESTIONS[lang],
+            'numerical': NumericalQuestions.QUESTIONS[lang],
+            'diagrammatic': DiagrammaticQuestions.QUESTIONS[lang]
+        }
 
-    def reset_pools(self):
-        """Reset question pools to their initial state"""
-        self.relationships = self.available_relationships.copy()
-        self.analogies = self.available_analogies.copy()
-
-    def generate_word_relationship(self) -> Question:
-        # If both pools are empty, refill them
-        if not self.relationships and not self.analogies:
-            self.reset_pools()
-            
-        # Choose which type to generate (but only if that pool isn't empty)
-        can_use_relationships = bool(self.relationships)
-        can_use_analogies = bool(self.analogies)
+    def generate_verbal_question(self) -> Question:
+        """Generate a verbal reasoning question"""
+        # Randomly choose between relationships and analogies
+        question_type = random.choice(['relationships', 'analogies'])
+        question_bank = self.questions['verbal'][question_type]
         
-        if can_use_relationships and can_use_analogies:
-            use_relationship = random.choice([True, False])
+        # Select a random question from the bank
+        question_data = random.choice(question_bank)
+        
+        if question_type == 'relationships':
+            question_text = (
+                f"What is the relationship between {question_data['pair'][0]} and {question_data['pair'][1]}?"
+                if self.lang == 'en' else
+                f"Jaký je vztah mezi slovy {question_data['pair'][0]} a {question_data['pair'][1]}?"
+            )
         else:
-            use_relationship = can_use_relationships
+            question_text = question_data['question']
 
-        if use_relationship:
-            # Generate a relationship question
-            chosen = self.relationships.pop(random.randrange(len(self.relationships)))
-            question_text = f"What is the relationship between {chosen['pair'][0]} and {chosen['pair'][1]}?"
-        else:
-            # Generate an analogy question
-            chosen = self.analogies.pop(random.randrange(len(self.analogies)))
-            question_text = chosen['question']
-            
         return Question(
             question_text=question_text,
-            options=chosen['options'],
-            correct_answer=chosen['correct'],
-            explanation=chosen['explanation']
+            options=question_data['options'],
+            correct_answer=question_data['correct'],
+            explanation=question_data['explanation']
         )
 
-class NumericalQuestionGenerator:
-    def __init__(self):
-        self.available_patterns = [
-            ('double', lambda x: x * 2),
-            ('triple', lambda x: x * 3),
-            ('add_3', lambda x: x + 3),
-            ('add_5', lambda x: x + 5),
-            ('square', lambda x: x ** 2),
-            ('times_1.5', lambda x: int(x * 1.5))
-        ]
-        self.reset_pools()
+    def generate_numerical_question(self) -> Question:
+        """Generate a numerical reasoning question"""
+        # Get a random sequence pattern
+        pattern = NumericalQuestions.get_random_sequence(self.lang)
         
-    def reset_pools(self):
-        """Reset patterns pool to initial state"""
-        self.patterns = self.available_patterns.copy()
-        
-    def generate_number_sequence(self) -> Question:
-        if not self.patterns:
-            self.reset_pools()
-            
-        pattern_name, pattern_func = self.patterns.pop(random.randrange(len(self.patterns)))
-        start = random.randint(2, 10)
-        sequence = [start]
-        
-        # Generate sequence
-        for _ in range(4):
-            sequence.append(pattern_func(sequence[-1]))
-        
-        # Create question
-        question_text = f"What comes next in the sequence: {', '.join(map(str, sequence[:-1]))}?"
-        options = [
-            str(sequence[-1]),  # Correct answer
-            str(sequence[-2] + random.randint(1, 5)),
-            str(sequence[-2] - random.randint(1, 5)),
-            str(int(sequence[-2] * 1.2))
-        ]
-        random.shuffle(options)
-        
+        # Generate the sequence and question
+        question_text, options, correct, explanation = (
+            NumericalQuestions.generate_sequence(pattern, self.lang)
+        )
+
         return Question(
             question_text=question_text,
             options=options,
-            correct_answer=str(sequence[-1]),
-            explanation=f"The pattern is: each number is {pattern_name}"
+            correct_answer=correct,
+            explanation=explanation
         )
 
-class DiagrammaticQuestionGenerator:
-    def __init__(self):
-        self.available_patterns = [
-            # Basic shape alternation
-            {
-                'sequence': '□ → ■ → □ → ■',
-                'options': ['□', '■', '△', '○'],
-                'correct': '□',
-                'explanation': 'The pattern alternates between filled and unfilled squares'
-            },
-            # Shape progression
-            {
-                'sequence': '△ → □ → ○ → △ → □',
-                'options': ['○', '△', '□', '■'],
-                'correct': '○',
-                'explanation': 'The sequence triangle-square-circle repeats'
-            },
-            # Size progression
-            {
-                'sequence': '○ → ◎ → ⊕ → ○ → ◎',
-                'options': ['⊕', '○', '◎', '□'],
-                'correct': '⊕',
-                'explanation': 'The circles increase in complexity then restart'
-            },
-            # Rotation pattern
-            {
-                'sequence': '↑ → → → ↓ → ←',
-                'options': ['↑', '→', '↓', '←'],
-                'correct': '↑',
-                'explanation': 'The arrow rotates 90 degrees clockwise each step'
-            },
-            # Combined shapes
-            {
-                'sequence': '□ → □△ → □△○ → □△',
-                'options': ['□', '△', '○', '□△○'],
-                'correct': '□',
-                'explanation': 'The pattern adds and removes shapes cyclically'
-            }
-        ]
-        
-        self.available_matrices = [
-            {
-                'matrix': [
-                    ['○', '□'],
-                    ['□', None]  # None represents the question mark
-                ],
-                'options': ['○', '□', '△', '■'],
-                'correct': '○',
-                'explanation': 'The shapes alternate in a diagonal pattern'
-            },
-            {
-                'matrix': [
-                    ['■', '□', '■'],
-                    ['□', '■', '□'],
-                    ['■', '□', None]
-                ],
-                'options': ['■', '□', '△', '○'],
-                'correct': '■',
-                'explanation': 'The pattern alternates between filled and unfilled squares in each row'
-            },
-            {
-                'matrix': [
-                    ['△', '○', '△'],
-                    ['○', '△', '○'],
-                    ['△', '○', None]
-                ],
-                'options': ['△', '○', '□', '■'],
-                'correct': '△',
-                'explanation': 'The pattern alternates between triangle and circle in each row'
-            }
-        ]
-        
-        self.reset_pools()
-        
-    def reset_pools(self):
-        """Reset both pattern pools to initial state"""
-        self.patterns = self.available_patterns.copy()
-        self.matrices = self.available_matrices.copy()
-
-    def generate_pattern_completion(self) -> Question:
-        # If both pools are empty, refill them
-        if not self.patterns and not self.matrices:
-            self.reset_pools()
+    def generate_diagrammatic_question(self) -> Question:
+        """Generate a diagrammatic reasoning question"""
+        # Randomly choose between sequence and matrix questions
+        if random.choice([True, False]):
+            # Sequence question
+            sequence = DiagrammaticQuestions.get_random_sequence(self.lang)
+            question_text = DiagrammaticQuestions.format_sequence_question(sequence, self.lang)
             
-        # Choose which type to generate (but only if that pool isn't empty)
-        can_use_patterns = bool(self.patterns)
-        can_use_matrices = bool(self.matrices)
-        
-        if can_use_patterns and can_use_matrices:
-            use_pattern = random.choice([True, False])
-        else:
-            use_pattern = can_use_patterns
-
-        if use_pattern:
-            chosen = self.patterns.pop(random.randrange(len(self.patterns)))
-            question_text = f"What comes next in the pattern: {chosen['sequence']}?"
             return Question(
                 question_text=question_text,
-                options=chosen['options'],
-                correct_answer=chosen['correct'],
-                explanation=chosen['explanation']
+                options=sequence['options'],
+                correct_answer=sequence['correct'],
+                explanation=sequence['explanation']
             )
         else:
-            chosen = self.matrices.pop(random.randrange(len(self.matrices)))
+            # Matrix question
+            matrix = DiagrammaticQuestions.get_random_matrix(self.lang)
+            question_text = DiagrammaticQuestions.format_matrix_question(self.lang)
+            
             return Question(
-                question_text="What should replace the question mark?",
-                options=chosen['options'],
-                correct_answer=chosen['correct'],
-                explanation=chosen['explanation'],
+                question_text=question_text,
+                options=matrix['options'],
+                correct_answer=matrix['correct'],
+                explanation=matrix['explanation'],
                 matrix_data={
-                    'matrix': chosen['matrix'],
-                    'rows': len(chosen['matrix']),
-                    'cols': len(chosen['matrix'][0])
+                    'matrix': matrix['matrix'],
+                    'rows': len(matrix['matrix']),
+                    'cols': len(matrix['matrix'][0])
                 }
             )
 
-class TestManager:
-    def __init__(self):
-        self.verbal_generator = VerbalQuestionGenerator()
-        self.numerical_generator = NumericalQuestionGenerator()
-        self.diagrammatic_generator = DiagrammaticQuestionGenerator()
-    
     def generate_test_section(self, section_type: str, num_questions: int = 5) -> List[Question]:
+        """Generate a complete test section of specified type"""
         generator_map = {
-            'verbal': self.verbal_generator.generate_word_relationship,
-            'numerical': self.numerical_generator.generate_number_sequence,
-            'diagrammatic': self.diagrammatic_generator.generate_pattern_completion
+            'verbal': self.generate_verbal_question,
+            'numerical': self.generate_numerical_question,
+            'diagrammatic': self.generate_diagrammatic_question
         }
         
         generator = generator_map.get(section_type)
@@ -346,12 +168,16 @@ def index():
 
 @app.route('/start_test/<section_type>')
 def start_test(section_type):
-    translations = TRANSLATIONS[session.get('lang', 'en')]
-    test_manager = TestManager()
+    """Start a new test section with questions in the current language"""
+    lang = session.get('lang', 'en')
+    translations = TRANSLATIONS[lang]
+    
+    # Create test manager with current language
+    test_manager = TestManager(lang)
     questions = test_manager.generate_test_section(section_type)
     
+    # Store test data in session
     questions_data = [q.to_dict() for q in questions]
-    
     session['current_test'] = {
         'section_type': section_type,
         'questions': questions_data,
@@ -359,22 +185,31 @@ def start_test(section_type):
         'answers': []
     }
     
-    return render_template('test.html', section_type=section_type, questions=questions, t=translations)
+    return render_template('test.html', 
+                         section_type=section_type, 
+                         questions=questions, 
+                         t=translations)
 
 @app.route('/submit_test', methods=['POST'])
 def submit_test():
+    """Handle test submission and calculate results"""
     answers = request.json.get('answers', [])
     current_test = session.get('current_test', {})
     questions = current_test.get('questions', [])
     
+    # Calculate score
     score = sum(1 for q, a in zip(questions, answers) if q['correct_answer'] == a)
     
+    # Calculate time taken
+    start_time = datetime.datetime.fromisoformat(current_test['start_time'])
+    time_taken = (datetime.datetime.now() - start_time).seconds
+    
+    # Prepare results
     result = {
         'score': score,
         'total': len(questions),
         'percentage': (score / len(questions)) * 100,
-        'time_taken': (datetime.datetime.now() - 
-                      datetime.datetime.fromisoformat(current_test['start_time'])).seconds
+        'time_taken': time_taken
     }
     
     return jsonify(result)
