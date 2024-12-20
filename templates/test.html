@@ -13,7 +13,7 @@
                     {{ t.diagrammatic_section.title }}
                 {% endif %}
             </h2>
-            <div class="text-xl font-mono" id="timer">15:00</div>
+            <div class="text-xl font-mono" id="timer">05:00</div>
         </div>
 
         <form id="testForm" class="space-y-8">
@@ -79,7 +79,7 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        let timeLeft = 15 * 60;  // 15 minutes
+        let timeLeft = 5 * 60;  // 5 minutes
         const timerDisplay = document.getElementById('timer');
         
         const timer = setInterval(function() {
