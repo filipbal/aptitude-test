@@ -11,18 +11,19 @@
 
         <form id="testForm" class="space-y-8">
             {% for question in questions %}
-            <div class="question-container">
-                <p class="font-semibold mb-3">{{ loop.index }}. {{ question.question_text }}</p>
-                <div class="space-y-2">
-                    {% for option in question.options %}
-                    <label class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
-                        <input type="radio" name="q{{ loop.parent.loop.index }}" value="{{ option }}" class="mt-1">
-                        <span>{{ option }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
+			<div class="question-container">
+				<p class="font-semibold mb-3">{{ loop.index }}. {{ question.question_text }}</p>
+				<div class="space-y-2">
+					{% set outer_loop = loop %}
+					{% for option in question.options %}
+					<label class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
+						<input type="radio" name="q{{ outer_loop.index }}" value="{{ option }}" class="mt-1">
+						<span>{{ option }}</span>
+					</label>
+					{% endfor %}
+				</div>
+			</div>
+			{% endfor %}	
 
             <div class="mt-6 text-center">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
@@ -34,8 +35,8 @@
 </div>
 
 <!-- Results Modal -->
-<div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+<div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
         <h3 class="text-xl font-bold mb-4">Test Results</h3>
         <div id="resultsContent" class="space-y-4">
             <!-- Results will be inserted here -->
@@ -51,63 +52,91 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Timer functionality
-    let timeLeft = 15 * 60; // 15 minutes in seconds
-    const timerDisplay = document.getElementById('timer');
-    
-    const timer = setInterval(function() {
-        timeLeft--;
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            submitTest();
-        }
-    }, 1000);
+	document.addEventListener('DOMContentLoaded', function() {
+		// Timer functionality - Changed to 5 minutes (300 seconds)
+		let timeLeft = 5 * 60; // 5 minutes in seconds
+		const timerDisplay = document.getElementById('timer');
+		
+		const timer = setInterval(function() {
+			timeLeft--;
+			const minutes = Math.floor(timeLeft / 60);
+			const seconds = timeLeft % 60;
+			timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+			
+			if (timeLeft <= 0) {
+				clearInterval(timer);
+				submitTest();
+			}
+		}, 1000);
+	
+		// Form submission
+		const testForm = document.getElementById('testForm');
+		testForm.addEventListener('submit', function(e) {
+			e.preventDefault();
+			clearInterval(timer); // Stop the timer when form is submitted
+			submitTest();
+		});
+	
+	function submitTest() {
+		const answers = [];
+		const questions = document.querySelectorAll('.question-container');
+		
+		questions.forEach((_, index) => {
+			const selected = document.querySelector(`input[name="q${index + 1}"]:checked`);
+			answers.push(selected ? selected.value : null);
+		});
 
-    // Form submission
-    const testForm = document.getElementById('testForm');
-    testForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        submitTest();
-    });
+		console.log('Submitting answers:', answers); // Debug log
 
-    function submitTest() {
-        const answers = [];
-        const questions = document.querySelectorAll('.question-container');
-        
-        questions.forEach((_, index) => {
-            const selected = document.querySelector(`input[name="q${index + 1}"]:checked`);
-            answers.push(selected ? selected.value : null);
-        });
-
-        fetch('/submit_test', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ answers: answers })
-        })
-        .then(response => response.json())
-        .then(result => {
-            clearInterval(timer);
-            showResults(result);
-        });
-    }
-
-    function showResults(result) {
-        const resultsContent = document.getElementById('resultsContent');
-        resultsContent.innerHTML = `
-            <p>Score: ${result.score}/${result.total}</p>
-            <p>Percentage: ${result.percentage.toFixed(1)}%</p>
-            <p>Time taken: ${Math.floor(result.time_taken / 60)}m ${result.time_taken % 60}s</p>
-        `;
-        
-        document.getElementById('resultsModal').classList.remove('hidden');
-    }
-});
+		fetch('/submit_test', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json'
+			},
+			body: JSON.stringify({ answers: answers })
+		})
+		.then(response => {
+			if (!response.ok) {
+				console.log('Response not OK:', response); // Debug log
+				return response.text().then(text => {
+					console.log('Error response:', text); // Debug log
+					throw new Error('Network response was not ok');
+				});
+			}
+			return response.json();
+		})
+		.then(result => {
+			console.log('Success result:', result); // Debug log
+			showResults(result);
+		})
+		.catch(error => {
+			console.error('Error:', error);
+			alert('There was a problem submitting your test. Please try again.');
+		});
+	}
+	
+		function showResults(result) {
+			const resultsContent = document.getElementById('resultsContent');
+			resultsContent.innerHTML = `
+				<div class="space-y-4">
+					<p class="text-lg font-semibold">Your Results:</p>
+					<p>Score: ${result.score}/${result.total}</p>
+					<p>Percentage: ${result.percentage.toFixed(1)}%</p>
+					<p>Time taken: ${Math.floor(result.time_taken / 60)}m ${result.time_taken % 60}s</p>
+				</div>
+			`;
+			
+			const modal = document.getElementById('resultsModal');
+			modal.classList.remove('hidden');
+			
+			// Close modal when clicking outside
+			modal.addEventListener('click', function(e) {
+				if (e.target === modal) {
+					window.location.href = '/';
+				}
+			});
+		}
+	});
 </script>
 {% endblock %}
