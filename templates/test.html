@@ -6,7 +6,7 @@
     <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold">{{ section_type|title }} Analysis</h2>
-            <div class="text-xl font-mono" id="timer">15:00</div>
+            <div class="text-xl font-mono" id="timer">05:00</div>
         </div>
 
         <form id="testForm" class="space-y-8">
@@ -53,8 +53,8 @@
 {% block scripts %}
 <script>
 	document.addEventListener('DOMContentLoaded', function() {
-		// Timer functionality - Changed to 5 minutes (300 seconds)
-		let timeLeft = 5 * 60; // 5 minutes in seconds
+		// Timer - 5 minutes
+		let timeLeft = 5 * 60;
 		const timerDisplay = document.getElementById('timer');
 		
 		const timer = setInterval(function() {
@@ -73,70 +73,31 @@
 		const testForm = document.getElementById('testForm');
 		testForm.addEventListener('submit', function(e) {
 			e.preventDefault();
-			clearInterval(timer); // Stop the timer when form is submitted
-			submitTest();
-		});
+			const answers = [];
+			
+			// Collect answers
+			document.querySelectorAll('.question-container').forEach((_, index) => {
+				const selected = document.querySelector(`input[name="q${index + 1}"]:checked`);
+				answers.push(selected ? selected.value : null);
+			});
 	
-	function submitTest() {
-		const answers = [];
-		const questions = document.querySelectorAll('.question-container');
-		
-		questions.forEach((_, index) => {
-			const selected = document.querySelector(`input[name="q${index + 1}"]:checked`);
-			answers.push(selected ? selected.value : null);
-		});
-
-		console.log('Submitting answers:', answers); // Debug log
-
-		fetch('/submit_test', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json'
-			},
-			body: JSON.stringify({ answers: answers })
-		})
-		.then(response => {
-			if (!response.ok) {
-				console.log('Response not OK:', response); // Debug log
-				return response.text().then(text => {
-					console.log('Error response:', text); // Debug log
-					throw new Error('Network response was not ok');
-				});
-			}
-			return response.json();
-		})
-		.then(result => {
-			console.log('Success result:', result); // Debug log
-			showResults(result);
-		})
-		.catch(error => {
-			console.error('Error:', error);
-			alert('There was a problem submitting your test. Please try again.');
-		});
-	}
-	
-		function showResults(result) {
-			const resultsContent = document.getElementById('resultsContent');
-			resultsContent.innerHTML = `
-				<div class="space-y-4">
-					<p class="text-lg font-semibold">Your Results:</p>
+			// Send to server
+			fetch('/submit_test', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ answers: answers })
+			})
+			.then(response => response.json())
+			.then(result => {
+				// Show results modal
+				document.getElementById('resultsContent').innerHTML = `
 					<p>Score: ${result.score}/${result.total}</p>
 					<p>Percentage: ${result.percentage.toFixed(1)}%</p>
-					<p>Time taken: ${Math.floor(result.time_taken / 60)}m ${result.time_taken % 60}s</p>
-				</div>
-			`;
-			
-			const modal = document.getElementById('resultsModal');
-			modal.classList.remove('hidden');
-			
-			// Close modal when clicking outside
-			modal.addEventListener('click', function(e) {
-				if (e.target === modal) {
-					window.location.href = '/';
-				}
+					<p>Time: ${Math.floor(result.time_taken / 60)}m ${result.time_taken % 60}s</p>
+				`;
+				document.getElementById('resultsModal').classList.remove('hidden');
 			});
-		}
+		});
 	});
 </script>
 {% endblock %}
